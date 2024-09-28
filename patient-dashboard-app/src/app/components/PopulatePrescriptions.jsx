@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Spin, Alert } from "antd";
 import { supabase } from "@/utils/supabase/supabaseClient";
+import Link from "next/link";
 
 const PopulatePrescriptions = () => {
 	const { user } = useUser();
@@ -35,7 +36,7 @@ const PopulatePrescriptions = () => {
 				await supabase
 					.from("Prescription")
 					.select(
-						"Dose, frequency, drugName, drugClass, drugName, drugClass, duration"
+						"prescriptionID, dose, frequency, drugName, drugClass, drugName, drugClass, duration"
 					)
 					.eq("patientID", patientData.patientID);
 
@@ -68,35 +69,41 @@ const PopulatePrescriptions = () => {
 			) : (
 				<ul style={{ listStyleType: "none", padding: 0 }}>
 					{prescriptions.map((prescription, index) => (
-						<li
+						<Link
+							href={`/prescription/${prescription.prescriptionID}`}
 							key={index}
-							style={{
-								marginBottom: "20px",
-								borderBottom: "1px solid #eee",
-								paddingBottom: "10px",
-							}}
+							passHref
 						>
-							<p>
-								<strong>Drug Name:</strong>{" "}
-								{prescription.drugName}
-							</p>
-							<p>
-								<strong>Drug Class:</strong>{" "}
-								{prescription.drugClass}
-							</p>
-							<p>
-								<strong>Dose:</strong> {prescription.Dose}{" "}
-								{prescription.doseUnit}
-							</p>
-							<p>
-								<strong>Frequency:</strong>{" "}
-								{prescription.frequency}
-							</p>
-							<p>
-								<strong>Duration:</strong>{" "}
-								{prescription.duration}
-							</p>
-						</li>
+							<li
+								style={{
+									marginBottom: "20px",
+									borderBottom: "1px solid #eee",
+									paddingBottom: "10px",
+									cursor: "pointer",
+								}}
+							>
+								<p>
+									<strong>Drug Name:</strong>{" "}
+									{prescription.drugName}
+								</p>
+								<p>
+									<strong>Drug Class:</strong>{" "}
+									{prescription.drugClass}
+								</p>
+								<p>
+									<strong>Dose:</strong> {prescription.dose}{" "}
+									{prescription.doseUnit}
+								</p>
+								<p>
+									<strong>Frequency:</strong>{" "}
+									{prescription.frequency}
+								</p>
+								<p>
+									<strong>Duration:</strong>{" "}
+									{prescription.duration}
+								</p>
+							</li>
+						</Link>
 					))}
 				</ul>
 			)}
