@@ -24,13 +24,12 @@ const Navbar = () => {
 				<div className="hidden md:flex space-x-4">
 					{/* Show UserButton if signed in */}
 					<SignedIn>
-						
 						<SaveUserInfo />
 						<UserButton />
 					</SignedIn>
 					{/* Show SignIn button if signed out */}
 					<SignedOut>
-						<SignInButton />
+						<SignInButton className="text-white" />
 					</SignedOut>
 				</div>
 				<button

@@ -8,35 +8,12 @@ import { Patient } from "./components/Patient";
 import { useRouter } from "next/router";
 import AddPatient from "./components/patientHandling/AddPatient";
 import { SignedIn } from "@clerk/nextjs";
+import DrugClassChecker from "./components/DrugClassChecker";
 
 export default function Home() {
 	const [input, setInput] = useState("");
 	const [data, setData] = useState([]);
 	const [refreshPatients, setRefreshPatients] = useState(0);
-	const addRow = async () => {
-		try {
-			const { data, error } = await supabase
-				.from("entries")
-				.insert([{ content: input }]); // Adjust to match your column name and table
-
-			if (error) throw error;
-			alert("Row added!");
-			setInput("");
-		} catch (error) {
-			console.error("Error adding row:", error.message);
-		}
-	};
-
-	const fetchData = async () => {
-		try {
-			const { data, error } = await supabase.from("entries").select("*");
-
-			if (error) throw error;
-			setData(data);
-		} catch (error) {
-			console.error("Error fetching data:", error.message);
-		}
-	};
 
 	const handlePatientAdded = () => {
 		// Increment refreshPatients to trigger a re-render of Patient component
@@ -50,6 +27,9 @@ export default function Home() {
 					<AddPatient onPatientAdded={handlePatientAdded} />
 				</div>
 				<Patient key={refreshPatients} />
+				{/* <DrugClassChecker /> */}
+				{/* <Prescription /> */}
+				{/* <Calendar /> */}
 			</SignedIn>
 		</div>
 	);

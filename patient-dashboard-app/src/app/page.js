@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { SignedIn } from "@clerk/nextjs";
 import CheckPatientData from "./components/CheckPatientData";
 import PopulatePrescriptions from "./components/PopulatePrescriptions";
+import Calendar from "./components/Calendar";
 export default function page() {
 	return (
 		<div className="mx-48 my-20 ">
@@ -15,6 +16,7 @@ export default function page() {
 				{/* <div className="flex flex-row justify-center items-center"></div> */}
 				<CheckPatientData />
 				<PopulatePrescriptions />
+				<Calendar />
 			</SignedIn>
 		</div>
 	);
