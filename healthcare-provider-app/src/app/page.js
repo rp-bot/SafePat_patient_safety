@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { supabase } from "@/utils/supabase/supabaseClient";
 
+import SaveUserInfo from "./components/SaveUserInfo";
+import { Patient } from "./components/Patient";
+import { useRouter } from "next/router";
+
 export default function Home() {
 	const [input, setInput] = useState("");
 	const [data, setData] = useState([]);
@@ -33,47 +37,8 @@ export default function Home() {
 	};
 
 	return (
-		<div className="flex flex-col items-center p-4">
-			<h1 className="text-2xl mb-4">Supabase with Next.js</h1>
-
-			{/* Input for adding a new row */}
-			<input
-				type="text"
-				value={input}
-				onChange={(e) => setInput(e.target.value)}
-				className="border p-2 mb-4 w-80"
-				placeholder="Enter text to add"
-			/>
-
-			{/* Button to add row */}
-			<button
-				onClick={addRow}
-				className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-			>
-				Add Row
-			</button>
-
-			{/* Button to fetch data */}
-			<button
-				onClick={fetchData}
-				className="bg-green-500 text-white px-4 py-2 rounded mb-4"
-			>
-				Fetch Data
-			</button>
-
-			{/* Display fetched data */}
-			<div className="w-80 mt-4">
-				<h2 className="text-xl mb-2">Data from Supabase:</h2>
-				{data.length > 0 ? (
-					<ul className="list-disc pl-4">
-						{data.map((item) => (
-							<li key={item.id}>{item.content}</li>
-						))}
-					</ul>
-				) : (
-					<p>No data found.</p>
-				)}
-			</div>
+		<div className="mx-48 my-20 ">
+			<Patient />
 		</div>
 	);
 }
