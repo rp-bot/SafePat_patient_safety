@@ -1,142 +1,216 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/supabaseClient";
-export const AddPrescription = ({ patientID }) => {
-	const [prescription, setPrescription] = useState({
-		patient_id: patientID || "",
-		doctor_id: "",
-		medication: "",
-		dosage: "",
-		prescription_date: "",
-	});
-	console.log(prescription);
-	const handleChange = (e) => {
-		const { name, value } = e.target;
-		setPrescription({ ...prescription, [name]: value });
-	};
+import {
+	Form,
+	Input,
+	DatePicker,
+	Select,
+	InputNumber,
+	Button,
+	Typography,
+	message,
+} from "antd";
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
+const { Title } = Typography;
+const { Option } = Select;
+
+export const AddPrescription = ({ patientID }) => {
+	const [form] = Form.useForm();
+	const [patientName, setPatientName] = useState("");
+	const [doctorName, setDoctorName] = useState("");
+
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				console.log("Fetching data for patientID:", patientID);
+
+				// Fetch doctor ID and name
+				const { data: relationshipData, error: relationshipError } =
+					await supabase
+						.from("ProviderRelationship")
+						.select("doctorID")
+						.eq("patientID", patientID)
+						.single();
+
+				if (relationshipError) throw relationshipError;
+
+				console.log("ProviderRelationship data:", relationshipData);
+
+				if (relationshipData) {
+					// Fetch doctor name
+					const { data: doctorData, error: doctorError } =
+						await supabase
+							.from("DoctorClerk")
+							.select("first_name, last_name")
+							.eq("doctorID", relationshipData.doctorID)
+							.single();
+
+					if (doctorError) throw doctorError;
+
+					console.log("Doctor data:", doctorData);
+
+					if (doctorData) {
+						setDoctorName(
+							`${doctorData.first_name} ${doctorData.last_name}`
+						);
+					}
+				}
+
+				// Fetch patient name
+				const { data: patientData, error: patientError } =
+					await supabase
+						.from("Patient")
+						.select("firstName, lastName")
+						.eq("patientID", patientID)
+						.single();
+
+				if (patientError) throw patientError;
+
+				console.log("Patient data:", patientData);
+
+				if (patientData) {
+					setPatientName(
+						`${patientData.firstName} ${patientData.lastName}`
+					);
+				}
+			} catch (error) {
+				console.error("Error fetching data:", error.message);
+				message.error("Failed to fetch patient and doctor data");
+			}
+		};
+
+		if (patientID) {
+			fetchData();
+		}
+	}, [patientID]);
+
+	const onFinish = async (values) => {
 		try {
+			const prescriptionData = {
+				...values,
+				patientID,
+				startDate: values.startDate.format("YYYY-MM-DD"),
+			};
+
 			const { data, error } = await supabase
 				.from("Prescription")
-				.insert([prescription]);
+				.insert([prescriptionData]);
 
 			if (error) throw error;
 
-			alert("Prescription added successfully!");
-			// Reset form after successful submission
-			setPrescription({
-				patient_id: "",
-				doctor_id: "",
-				medication: "",
-				dosage: "",
-				prescription_date: "",
-			});
+			message.success("Prescription added successfully!");
+			form.resetFields();
 		} catch (error) {
 			console.error("Error adding prescription:", error.message);
-			alert("Failed to add prescription. Please try again.");
+			message.error("Failed to add prescription. Please try again.");
 		}
 	};
 
 	return (
-		<div className="max-w-md  mt-8 p-6 bg-white rounded-lg shadow-md">
-			<h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+		<div className="max-w-md mt-8 p-6 bg-white rounded-lg shadow-md">
+			<Title level={2} className="text-center mb-6">
 				Add New Prescription
-			</h2>
-			<form onSubmit={handleSubmit} className="space-y-4">
-				<div className="flex flex-col">
-					<label
-						htmlFor="patient_id"
-						className="mb-1 font-medium text-gray-700"
-					>
-						Patient ID:
-					</label>
-					<input
-						type="number"
-						id="patient_id"
-						name="patient_id"
-						value={patientID}
-						placeholder={patientID}
-						onChange={handleChange}
-						required
-						className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+			</Title>
+			<Form form={form} onFinish={onFinish} layout="vertical">
+				{/* <Form.Item label="Patient">
+					<Input
+						value={`${patientName} (ID: ${patientID})`}
+						disabled
 					/>
-				</div>
-				<div className="flex flex-col">
-					<label
-						htmlFor="doctor_id"
-						className="mb-1 font-medium text-gray-700"
-					>
-						Doctor ID:
-					</label>
-					<input
-						type="number"
-						id="doctor_id"
-						name="doctor_id"
-						value={prescription.doctor_id}
-						onChange={handleChange}
-						required
-						className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<div className="flex flex-col">
-					<label
-						htmlFor="medication"
-						className="mb-1 font-medium text-gray-700"
-					>
-						Medication:
-					</label>
-					<input
-						type="text"
-						id="medication"
-						name="medication"
-						value={prescription.medication}
-						onChange={handleChange}
-						required
-						className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<div className="flex flex-col">
-					<label
-						htmlFor="dosage"
-						className="mb-1 font-medium text-gray-700"
-					>
-						Dosage:
-					</label>
-					<input
-						type="text"
-						id="dosage"
-						name="dosage"
-						value={prescription.dosage}
-						onChange={handleChange}
-						required
-						className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<div className="flex flex-col">
-					<label
-						htmlFor="prescription_date"
-						className="mb-1 font-medium text-gray-700"
-					>
-						Prescription Date:
-					</label>
-					<input
-						type="datetime-local"
-						id="prescription_date"
-						name="prescription_date"
-						value={prescription.prescription_date}
-						onChange={handleChange}
-						required
-						className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<button
-					type="submit"
-					className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md transition duration-300"
+				</Form.Item>
+				<Form.Item label="Doctor">
+					<Input value={doctorName} disabled />
+				</Form.Item> */}
+				<Form.Item
+					name="drugName"
+					label="Drug Name"
+					rules={[
+						{
+							required: true,
+							message: "Please input the drug name!",
+						},
+					]}
 				>
-					Add Prescription
-				</button>
-			</form>
+					<Input />
+				</Form.Item>
+				<Form.Item
+					name="drugClass"
+					label="Drug Class"
+					rules={[
+						{
+							required: true,
+							message: "Please input the drug class!",
+						},
+					]}
+				>
+					<Input />
+				</Form.Item>
+				<Form.Item
+					name="startDate"
+					label="Start Date"
+					rules={[
+						{
+							required: true,
+							message: "Please select the start date!",
+						},
+					]}
+				>
+					<DatePicker className="w-full" />
+				</Form.Item>
+				<Form.Item
+					name="duration"
+					label="Duration"
+					rules={[
+						{
+							required: true,
+							message: "Please input the duration!",
+						},
+					]}
+				>
+					<Input />
+				</Form.Item>
+				<Form.Item
+					name="frequency"
+					label="Frequency"
+					rules={[
+						{
+							required: true,
+							message: "Please input the frequency!",
+						},
+					]}
+				>
+					<Input />
+				</Form.Item>
+				<Form.Item
+					name="doseUnit"
+					label="Dose Unit"
+					rules={[
+						{
+							required: true,
+							message: "Please select the dose unit!",
+						},
+					]}
+				>
+					<Select>
+						<Option value="mg">mg</Option>
+						<Option value="mcg">mcg</Option>
+					</Select>
+				</Form.Item>
+				<Form.Item
+					name="dose"
+					label="Dose"
+					rules={[
+						{ required: true, message: "Please input the dose!" },
+					]}
+				>
+					<InputNumber className="w-full" />
+				</Form.Item>
+				<Form.Item>
+					<Button type="primary" htmlType="submit" className="w-full">
+						Add Prescription
+					</Button>
+				</Form.Item>
+			</Form>
 		</div>
 	);
 };

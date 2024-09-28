@@ -1,34 +1,21 @@
-import { currentUser } from '@clerk/nextjs'
-import { supabase } from '@/utils/supabase/supabaseClient'
-import UserProfileFormWrapper from './components/UserProfileFormWrapper'
+"use client";
+import React from "react";
+import { useState } from "react";
+import { supabase } from "@/utils/supabase/supabaseClient";
 
-async function getPatientData() {
-  const user = await currentUser()
-  if (!user) return null
+import { useRouter } from "next/router";
 
-  const { data, error } = await supabase
-    .from('Patient')
-    .select('dob')
-    .eq('clerk_username', user.username)
-    .single()
-
-  if (error) {
-    console.error('Error fetching patient data:', error)
-    return null
-  }
-
-  return data
-}
-
-export default async function Page() {
-  const patientData = await getPatientData()
-
-  const showForm = !patientData || !patientData.dob
-
-  return (
-    <>
-      {showForm && <UserProfileFormWrapper />}
-      {!showForm && <p>Your profile is complete.</p>}
-    </>
-  )
+import { SignedIn } from "@clerk/nextjs";
+import CheckPatientData from "./components/CheckPatientData";
+import PopulatePrescriptions from "./components/PopulatePrescriptions";
+export default function page() {
+	return (
+		<div className="mx-48 my-20 ">
+			<SignedIn>
+				{/* <div className="flex flex-row justify-center items-center"></div> */}
+				<CheckPatientData />
+				<PopulatePrescriptions />
+			</SignedIn>
+		</div>
+	);
 }

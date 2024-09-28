@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/supabaseClient";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 
 export function Patient() {
 	const [patients, setPatients] = useState([]);
@@ -54,17 +55,39 @@ export function Patient() {
 		}
 	};
 
+	const calculateAge = (dob) => {
+		const birthDate = new Date(dob);
+		const today = new Date();
+		let age = today.getFullYear() - birthDate.getFullYear();
+		const monthDiff = today.getMonth() - birthDate.getMonth();
+
+		if (
+			monthDiff < 0 ||
+			(monthDiff === 0 && today.getDate() < birthDate.getDate())
+		) {
+			age--;
+		}
+
+		return age;
+	};
+
 	return (
-		<div>
-			<h2>Your Patients</h2>
+		<div className="p-4">
+			<h2 className="text-2xl font-bold my-5">Your Patients</h2>
 			{patients.map((patient) => (
-				<div key={patient.patientID}>
-					<h3>{patient.firstName + " " + patient.lastName}</h3>
-					<p>Date of Birth: {patient.dob}</p>
+				<Link
+					href={`/patient/${patient.patientID}`}
+					key={patient.patientID}
+					className="mx-4 bg-zinc-800 p-4 rounded-md grid grid-cols-2 text-zinc-50 cursor-pointer"
+				>
+					<h3 className="text-xl font-bold">
+						{patient.firstName + " " + patient.lastName}
+					</h3>
+					<p>Age: {calculateAge(patient.dob)}</p>
 					<p>Gender: {patient.gender}</p>
 					<p>Email Address: {patient.email}</p>
 					{/* Add more patient information as needed */}
-				</div>
+				</Link>
 			))}
 		</div>
 	);

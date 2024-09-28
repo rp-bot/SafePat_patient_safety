@@ -12,7 +12,7 @@ import { SignedIn } from "@clerk/nextjs";
 export default function Home() {
 	const [input, setInput] = useState("");
 	const [data, setData] = useState([]);
-
+	const [refreshPatients, setRefreshPatients] = useState(0);
 	const addRow = async () => {
 		try {
 			const { data, error } = await supabase
@@ -38,11 +38,18 @@ export default function Home() {
 		}
 	};
 
+	const handlePatientAdded = () => {
+		// Increment refreshPatients to trigger a re-render of Patient component
+		setRefreshPatients((prev) => prev + 1);
+	};
+
 	return (
 		<div className="mx-48 my-20 ">
 			<SignedIn>
-				<AddPatient />
-				<Patient />
+				<div className="flex flex-row justify-center items-center">
+					<AddPatient onPatientAdded={handlePatientAdded} />
+				</div>
+				<Patient key={refreshPatients} />
 			</SignedIn>
 		</div>
 	);

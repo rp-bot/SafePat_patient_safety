@@ -3,7 +3,7 @@ import { Button, Modal, Input, message } from "antd";
 import { useUser } from "@clerk/clerk-react";
 import { supabase } from "@/utils/supabase/supabaseClient"; // Ensure this path is correct
 
-function AddPatient() {
+function AddPatient({ onPatientAdded }) {
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [searchResults, setSearchResults] = useState([]);
@@ -67,6 +67,7 @@ function AddPatient() {
 			message.error("Failed to add patient relationship");
 		} else {
 			message.success("Patient relationship added successfully");
+			onPatientAdded();
 			handleCancel();
 		}
 	};

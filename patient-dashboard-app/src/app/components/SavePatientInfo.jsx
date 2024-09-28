@@ -1,3 +1,4 @@
+// components/UserInfo.js
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/utils/supabase/supabaseClient";
@@ -14,25 +15,26 @@ export default function SavePatientInfo() {
 
 			// Gather user information from Clerk
 			const clerkUserId = user?.username;
-			const name = `${user?.firstName} ${user?.lastName}`;
+			const firstName = user?.firstName;
+			const lastName = user?.lastName;
 			const email = user.primaryEmailAddress?.emailAddress;
-            // console.log(clerkUserId);
+			const phone = user?.phone_number;
 			try {
 				// Insert or update user information into the Supabase 'users' table
-				const { data, error } = await supabase
-					.from("PatientClerk")
-					.upsert(
-						{
-							clerk_user_id: clerkUserId,
-							name: name,
-							email: email,
-							// healthcareProvider: "TRUE",
-						},
-						{
-							// Update the row if 'clerk_user_id' already exists
-							onConflict: ["clerk_user_id"],
-						}
-					);
+				const { data, error } = await supabase.from("Patient").upsert(
+					{
+						clerk_username: clerkUserId,
+						firstName: firstName,
+						lastName: lastName,
+						email: email,
+						// phone: phone,
+						// healthcareProvider: "TRUE",
+					},
+					{
+						// Update the row if 'clerk_user_id' already exists
+						onConflict: ["clerk_username"],
+					}
+				);
 
 				if (error) {
 					console.error("Supabase error:", error);
@@ -40,8 +42,7 @@ export default function SavePatientInfo() {
 				}
 
 				setStatus("User information saved successfully");
-				console.log("User data:", data);
-                
+				// console.log("User data:", data);
 			} catch (err) {
 				setStatus(`Failed to save user information: ${err.message}`);
 			}
@@ -51,10 +52,8 @@ export default function SavePatientInfo() {
 		saveUserToSupabase();
 	}, [isSignedIn, user]);
 
-	return (
-        <div className="">
-            hello
-            {user?.username}
-        </div>
-    );
+	return;
+	// <div>
+	// 	<p>{console.log(user)}</p>
+	// </div>;
 }
