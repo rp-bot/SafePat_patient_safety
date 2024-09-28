@@ -6,6 +6,8 @@ import { supabase } from "@/utils/supabase/supabaseClient";
 import SaveUserInfo from "./components/SaveUserInfo";
 import { Patient } from "./components/Patient";
 import { useRouter } from "next/router";
+import AddPatient from "./components/patientHandling/AddPatient";
+import { SignedIn } from "@clerk/nextjs";
 
 export default function Home() {
 	const [input, setInput] = useState("");
@@ -38,7 +40,10 @@ export default function Home() {
 
 	return (
 		<div className="mx-48 my-20 ">
-			<Patient />
+			<SignedIn>
+				<AddPatient />
+				<Patient />
+			</SignedIn>
 		</div>
 	);
 }

@@ -1,71 +1,71 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/supabaseClient";
-import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
-export const Patient = () => {
+export function Patient() {
 	const [patients, setPatients] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const { user } = useUser();
 
 	useEffect(() => {
-		fetchPatients();
-	}, []);
+		if (user) {
+			fetchPatients();
+		}
+	}, [user]);
 
 	const fetchPatients = async () => {
 		try {
-			const { data, error } = await supabase.from("Patient").select("*");
+			// Get the current user's username
+			const username = user.username;
 
-			if (error) throw error;
-			setPatients(data);
-			console.log(data);
+			// First, get the doctorID from the DoctorClerk table
+			const { data: doctorData, error: doctorError } = await supabase
+				.from("DoctorClerk")
+				.select("doctorID")
+				.eq("clerk_username", username)
+				.single();
+
+			if (doctorError) throw doctorError;
+
+			const doctorID = doctorData.doctorID;
+			// console.log(doctorID);
+			// Now, get all patientIDs associated with the doctorID
+			const { data: relationships, error: relationshipError } =
+				await supabase
+					.from("ProviderRelationship")
+					.select("patientID")
+					.eq("doctorID", doctorID);
+
+			if (relationshipError) throw relationshipError;
+
+			// Extract patientIDs from the relationships
+			const patientIDs = relationships.map((rel) => rel.patientID);
+			console.log(patientIDs);
+			// Finally, fetch patient information for these patientIDs
+			const { data: patientData, error: patientError } = await supabase
+				.from("Patient")
+				.select("*")
+				.in("patientID", patientIDs);
+
+			if (patientError) throw patientError;
+
+			setPatients(patientData);
 		} catch (error) {
 			console.error("Error fetching patients:", error.message);
-		} finally {
-			setLoading(false);
 		}
 	};
 
-	if (loading) return <div>Loading patients...</div>;
-
 	return (
-		<div className="flex flex-col gap-4 ">
-			<h1 className="text-2xl font-bold">Patients</h1>
-			{patients.length === 0 ? (
-				<p>No patients found.</p>
-			) : (
-				<ul className="flex flex-col gap-4 mx-4  ">
-					{patients.map((patient) => (
-						<Link
-							href={`/patient/${patient.patientID}`}
-							key={patient.patientID}
-							className="grid grid-cols-2 bg-zinc-200  p-4 rounded-lg"
-						>
-							<h2>
-								{patient.lastName}, {patient.firstName}
-							</h2>
-							<p className="text-right">
-								Age: {calculateAge(patient.dob)}
-							</p>
-							{/* <p>Email: {patient.email}</p> */}
-							{/* Add more patient details as needed */}
-						</Link>
-					))}
-				</ul>
-			)}
+		<div>
+			<h2>Your Patients</h2>
+			{patients.map((patient) => (
+				<div key={patient.patientID}>
+					<h3>{patient.firstName + " " + patient.lastName}</h3>
+					<p>Date of Birth: {patient.dob}</p>
+					<p>Gender: {patient.gender}</p>
+					<p>Email Address: {patient.email}</p>
+					{/* Add more patient information as needed */}
+				</div>
+			))}
 		</div>
 	);
-};
-const calculateAge = (dob) => {
-	const today = new Date();
-	const birthDate = new Date(dob);
-	let age = today.getFullYear() - birthDate.getFullYear();
-	const monthDiff = today.getMonth() - birthDate.getMonth();
-
-	if (
-		monthDiff < 0 ||
-		(monthDiff === 0 && today.getDate() < birthDate.getDate())
-	) {
-		age--;
-	}
-
-	return age;
-};
+}

@@ -24,6 +24,7 @@ const Navbar = () => {
 				<div className="hidden md:flex space-x-4">
 					{/* Show UserButton if signed in */}
 					<SignedIn>
+						
 						<SaveUserInfo />
 						<UserButton />
 					</SignedIn>

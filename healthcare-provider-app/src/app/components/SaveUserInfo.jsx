@@ -15,23 +15,26 @@ export default function SaveUserInfo() {
 
 			// Gather user information from Clerk
 			const clerkUserId = user?.username;
-			const name = `${user?.firstName} ${user?.lastName}`;
+			const firstName = user?.firstName;
+			const lastName = user?.lastName;
 			const email = user.primaryEmailAddress?.emailAddress;
-
+			const phone = user?.phone_number;
 			try {
 				// Insert or update user information into the Supabase 'users' table
 				const { data, error } = await supabase
 					.from("DoctorClerk")
 					.upsert(
 						{
-							clerk_user_id: clerkUserId,
-							name: name,
+							clerk_username: clerkUserId,
+							first_name: firstName,
+							last_name: lastName,
 							email: email,
+							phone: phone,
 							// healthcareProvider: "TRUE",
 						},
 						{
 							// Update the row if 'clerk_user_id' already exists
-							onConflict: ["clerk_user_id"],
+							onConflict: ["clerk_username"],
 						}
 					);
 
@@ -51,5 +54,8 @@ export default function SaveUserInfo() {
 		saveUserToSupabase();
 	}, [isSignedIn, user]);
 
-	return null;
+	return;
+	<div>
+		<p>{console.log(user)}</p>
+	</div>;
 }
