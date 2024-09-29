@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Spin, Alert, Collapse } from "antd";
+import { Spin, Alert, Collapse, Button } from "antd";
 import { supabase } from "@/utils/supabase/supabaseClient";
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ const PopulatePrescriptions = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [fdaData, setFdaData] = useState({});
+	const [summary, setSummary] = useState("");
 
 	useEffect(() => {
 		if (user) {
@@ -86,6 +87,40 @@ const PopulatePrescriptions = () => {
 		);
 	};
 
+	const generateSummary = async () => {
+		try {
+			const prescriptionData = prescriptions.map(p => ({
+				drugInfo: `${p.drugName} (${p.drugClass}): ${p.dose} ${p.frequency} for ${p.duration}`,
+				fdaInfo: fdaData[p.prescriptionID] || {}
+			}));
+
+			const prompt = `Summarize the following prescriptions and their FDA information:
+${prescriptionData.map(p => `
+Drug: ${p.drugInfo}
+FDA Info: ${Object.entries(p.fdaInfo).map(([key, value]) => `${key}: ${value}`).join(', ')}
+`).join('\n')}
+Provide a concise summary of the medications, their purposes, and any important warnings or considerations.`;
+
+			const response = await fetch('/api/perplexity', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ prompt }),
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to generate summary');
+			}
+
+			const data = await response.json();
+			setSummary(data.response);
+		} catch (error) {
+			console.error('Error generating summary:', error);
+			setError('Failed to generate summary. Please try again.');
+		}
+	};
+
 	if (loading) {
 		return <Spin size="large" />;
 	}
@@ -102,55 +137,69 @@ const PopulatePrescriptions = () => {
 			{prescriptions.length === 0 ? (
 				<p>No prescriptions found.</p>
 			) : (
-				<ul style={{ listStyleType: "none", padding: 0 }}>
-					{prescriptions.map((prescription, index) => (
-						<li key={index} style={{
-							marginBottom: "20px",
-							borderBottom: "1px solid #eee",
-							paddingBottom: "10px",
-							cursor: "pointer",
-						}}>
-							<Link
-								href={`/prescription/${prescription.prescriptionID}`}
-								passHref
-							>
-								<div style={{ cursor: "pointer" }}>
-									<p>
-										<strong>Drug Name:</strong>{" "}
-										{prescription.drugName}
-									</p>
-									<p>
-										<strong>Drug Class:</strong>{" "}
-										{prescription.drugClass}
-									</p>
-									<p>
-										<strong>Dose:</strong> {prescription.dose}{" "}
-										{prescription.doseUnit}
-									</p>
-									<p>
-										<strong>Frequency:</strong>{" "}
-										{prescription.frequency}
-									</p>
-									<p>
-										<strong>Duration:</strong>{" "}
-										{prescription.duration}
-									</p>
-								</div>
-							</Link>
-							<Collapse>
-								<Panel header="FDA Information" key="1">
-									{fdaData[prescription.prescriptionID] ? (
-										Object.entries(fdaData[prescription.prescriptionID]).map(([key, value]) => (
-											<p key={key}><strong>{key.replace(/_/g, ' ')}:</strong> {value}</p>
-										))
-									) : (
-										<p>FDA data not available</p>
-									)}
-								</Panel>
-							</Collapse>
-						</li>
-					))}
-				</ul>
+				<>
+					<Button onClick={generateSummary} style={{ marginBottom: '20px' }}>
+						Generate Summary
+					</Button>
+					{summary && (
+						<Alert
+							message="Prescription Summary"
+							description={summary}
+							type="info"
+							showIcon
+							style={{ marginBottom: '20px' }}
+						/>
+					)}
+					<ul style={{ listStyleType: "none", padding: 0 }}>
+						{prescriptions.map((prescription, index) => (
+							<li key={index} style={{
+								marginBottom: "20px",
+								borderBottom: "1px solid #eee",
+								paddingBottom: "10px",
+								cursor: "pointer",
+							}}>
+								<Link
+									href={`/prescription/${prescription.prescriptionID}`}
+									passHref
+								>
+									<div style={{ cursor: "pointer" }}>
+										<p>
+											<strong>Drug Name:</strong>{" "}
+											{prescription.drugName}
+										</p>
+										<p>
+											<strong>Drug Class:</strong>{" "}
+											{prescription.drugClass}
+										</p>
+										<p>
+											<strong>Dose:</strong> {prescription.dose}{" "}
+											{prescription.doseUnit}
+										</p>
+										<p>
+											<strong>Frequency:</strong>{" "}
+											{prescription.frequency}
+										</p>
+										<p>
+											<strong>Duration:</strong>{" "}
+											{prescription.duration}
+										</p>
+									</div>
+								</Link>
+								<Collapse>
+									<Panel header="FDA Information" key="1">
+										{fdaData[prescription.prescriptionID] ? (
+											Object.entries(fdaData[prescription.prescriptionID]).map(([key, value]) => (
+												<p key={key}><strong>{key.replace(/_/g, ' ')}:</strong> {value}</p>
+											))
+										) : (
+											<p>FDA data not available</p>
+										)}
+									</Panel>
+								</Collapse>
+							</li>
+						))}
+					</ul>
+				</>
 			)}
 		</div>
 	);
