@@ -9,6 +9,7 @@ import {
 	Button,
 	Typography,
 	message,
+	Modal,
 } from "antd";
 
 const { Title } = Typography;
@@ -84,8 +85,44 @@ export const AddPrescription = ({ patientID }) => {
 		}
 	}, [patientID]);
 
+	const checkExistingPrescriptions = async (newDrugClass) => {
+		try {
+			const { data: prescriptions, error: prescriptionError } = await supabase
+				.from("Prescription")
+				.select("drugName, drugClass, startDate, duration, frequency, dose, doseUnit")
+				.eq("patientID", patientID)
+				.eq("drugClass", newDrugClass);
+
+			if (prescriptionError) throw prescriptionError;
+
+			if (prescriptions && prescriptions.length > 0) {
+				const existingPrescription = prescriptions[0];
+				
+				return new Promise((resolve) => {
+					Modal.confirm({
+						title: "Existing Prescription of Same Class Found",
+						content: `Another doctor has already prescribed a medication of class "${existingPrescription.drugClass}" on ${existingPrescription.startDate}. 
+						The prescription was prescribed for a duration of: ${existingPrescription.duration} days, 
+						a frequency of ${existingPrescription.frequency} times a day, with a dose of ${existingPrescription.dose} ${existingPrescription.doseUnit}.
+						Do you want to proceed with adding this new prescription?`,
+						onOk: () => resolve(true),
+						onCancel: () => resolve(false),
+					});
+				});
+			}
+			return true;
+		} catch (error) {
+			console.error("Error checking existing prescriptions:", error.message);
+			message.error("Failed to check existing prescriptions. Please try again.");
+			return false;
+		}
+	};
+
 	const onFinish = async (values) => {
 		try {
+			const shouldProceed = await checkExistingPrescriptions(values.drugClass);
+			if (!shouldProceed) return;
+
 			const prescriptionData = {
 				...values,
 				patientID,
