@@ -31,7 +31,7 @@ export default function Home() {
 				{/* <DrugClassChecker /> */}
 				{/* <Prescription /> */}
 				{/* <Calendar /> */}
-				<UpdatePatientMR />
+				
 			</SignedIn>
 		</div>
 	);
