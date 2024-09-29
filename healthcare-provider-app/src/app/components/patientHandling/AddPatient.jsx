@@ -33,6 +33,7 @@ function AddPatient({ onPatientAdded }) {
 				message.error("Failed to search patients");
 			} else {
 				setSearchResults(data);
+				console.log(data);
 			}
 		} else {
 			setSearchResults([]);
