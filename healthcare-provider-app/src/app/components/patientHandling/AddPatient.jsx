@@ -32,6 +32,7 @@ function AddPatient({ onPatientAdded }) {
 				console.error("Error searching patients:", error);
 				message.error("Failed to search patients");
 			} else {
+				setSearchResults(data || []);
 				setSearchResults(data);
 				console.log(data);
 			}
@@ -92,7 +93,7 @@ function AddPatient({ onPatientAdded }) {
 					<ul>
 						{searchResults.map((patient) => (
 							<li
-								key={patient.id}
+								key={patient.patientID}
 								onClick={() =>
 									handleSelectPatient(patient?.patientID)
 								}

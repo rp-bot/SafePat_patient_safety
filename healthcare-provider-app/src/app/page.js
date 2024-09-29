@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import AddPatient from "./components/patientHandling/AddPatient";
 import { SignedIn } from "@clerk/nextjs";
 import DrugClassChecker from "./components/DrugClassChecker";
+import UpdatePatientMR from "./components/patientHandling/UpdatePatientMR";
 
 export default function Home() {
 	const [input, setInput] = useState("");
@@ -30,6 +31,7 @@ export default function Home() {
 				{/* <DrugClassChecker /> */}
 				{/* <Prescription /> */}
 				{/* <Calendar /> */}
+				<UpdatePatientMR />
 			</SignedIn>
 		</div>
 	);
