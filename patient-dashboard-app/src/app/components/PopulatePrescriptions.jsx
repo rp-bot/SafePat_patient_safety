@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { Spin, Alert } from "antd";
 import { useUser } from "@clerk/nextjs";
-import { Spin, Alert, Collapse, Button } from "antd";
+import { createClient } from "@supabase/supabase-js";
+import PrescriptionItem from "./PrescriptionItem"; // Import the new component
 import { supabase } from "@/utils/supabase/supabaseClient";
-import Link from "next/link";
-
-const { Panel } = Collapse;
 
 const PopulatePrescriptions = () => {
 	const { user } = useUser();
@@ -12,39 +11,38 @@ const PopulatePrescriptions = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [fdaData, setFdaData] = useState({});
-	const [summary, setSummary] = useState("");
 
 	useEffect(() => {
 		if (user) {
-			fetchPrescriptions();
+			fetchPatientIDAndPrescriptions();
 		}
 	}, [user]);
 
-	const fetchPrescriptions = async () => {
+	const fetchPatientIDAndPrescriptions = async () => {
 		try {
-			// First, get the patientID using the Clerk username
+			// Fetch patientID using clerk.username
 			const { data: patientData, error: patientError } = await supabase
 				.from("Patient")
 				.select("patientID")
 				.eq("clerk_username", user.username)
 				.single();
 
-			if (patientError) throw patientError;
-
-			if (!patientData) {
-				throw new Error("Patient not found");
+			if (patientError) {
+				throw new Error(patientError.message);
 			}
 
-			// Now, fetch prescriptions for this patient
+			const patientID = patientData.patientID;
+
+			// Fetch prescriptions using patientID
 			const { data: prescriptionData, error: prescriptionError } =
 				await supabase
 					.from("Prescription")
-					.select(
-						"prescriptionID, dose, frequency, drugName, drugClass, drugName, drugClass, duration"
-					)
-					.eq("patientID", patientData.patientID);
+					.select("*")
+					.eq("patientID", patientID);
 
-			if (prescriptionError) throw prescriptionError;
+			if (prescriptionError) {
+				throw new Error(prescriptionError.message);
+			}
 
 			setPrescriptions(prescriptionData);
 
@@ -54,7 +52,7 @@ const PopulatePrescriptions = () => {
 			const fdaDataMap = Object.fromEntries(fdaResults);
 			setFdaData(fdaDataMap);
 		} catch (err) {
-			console.error("Error fetching prescriptions:", err);
+			console.error("Error fetching patientID or prescriptions:", err);
 			setError(err.message);
 		} finally {
 			setLoading(false);
@@ -63,62 +61,47 @@ const PopulatePrescriptions = () => {
 
 	const fetchFdaData = async (prescription) => {
 		try {
-			const response = await fetch(`https://api.fda.gov/drug/label.json/?search=${encodeURIComponent(prescription.drugName)}`);
+			const response = await fetch(
+				`https://api.fda.gov/drug/label.json/?search=${encodeURIComponent(
+					prescription.drugName
+				)}`
+			);
 			const data = await response.json();
 			const result = data.results[0] || {};
 			return [prescription.prescriptionID, extractRelevantData(result)];
 		} catch (error) {
-			console.error(`Error fetching FDA data for ${prescription.drugName}:`, error);
+			console.error(
+				`Error fetching FDA data for ${prescription.drugName}:`,
+				error
+			);
 			return [prescription.prescriptionID, {}];
 		}
 	};
 
 	const extractRelevantData = (data) => {
 		const relevantKeys = [
-			'package_ndc', 'brand_name', 'generic_name', 'purpose',
-			'indications_and_usage', 'warnings', 'do_not_use',
-			'ask_a_doctor', 'ask_doctor_or_pharmacist', 'stop_use',
-			'pregnancy_or_breast_feeding', 'keep_out_of_reach_of_children',
-			'dosage_and_administration', 'storage_and_handling',
-			'package_label_principal_display_panel'
+			"package_ndc",
+			"brand_name",
+			"generic_name",
+			"purpose",
+			"indications_and_usage",
+			"warnings",
+			"do_not_use",
+			"ask_a_doctor",
+			"ask_doctor_or_pharmacist",
+			"stop_use",
+			"pregnancy_or_breast_feeding",
+			"keep_out_of_reach_of_children",
+			"dosage_and_administration",
+			"storage_and_handling",
+			"package_label_principal_display_panel",
 		];
 		return Object.fromEntries(
-			relevantKeys.map(key => [key, data[key] ? data[key][0] : 'Not available'])
+			relevantKeys.map((key) => [
+				key,
+				data[key] ? data[key][0] : "Not available",
+			])
 		);
-	};
-
-	const generateSummary = async () => {
-		try {
-			const prescriptionData = prescriptions.map(p => ({
-				drugInfo: `${p.drugName} (${p.drugClass}): ${p.dose} ${p.frequency} for ${p.duration}`,
-				fdaInfo: fdaData[p.prescriptionID] || {}
-			}));
-
-			const prompt = `Summarize the following prescriptions and their FDA information:
-${prescriptionData.map(p => `
-Drug: ${p.drugInfo}
-FDA Info: ${Object.entries(p.fdaInfo).map(([key, value]) => `${key}: ${value}`).join(', ')}
-`).join('\n')}
-Provide a concise summary of the medications, their purposes, and any important warnings or considerations.`;
-
-			const response = await fetch('/api/perplexity', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ prompt }),
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to generate summary');
-			}
-
-			const data = await response.json();
-			setSummary(data.response);
-		} catch (error) {
-			console.error('Error generating summary:', error);
-			setError('Failed to generate summary. Please try again.');
-		}
 	};
 
 	if (loading) {
@@ -132,74 +115,22 @@ Provide a concise summary of the medications, their purposes, and any important 
 	}
 
 	return (
-		<div>
-			<h2>Your Prescriptions</h2>
+		<div className="bg-zinc-300 p-2 rounded-lg">
+			<h2 className="text-2xl font-bold my-2 w-full self-center flex justify-center ">
+				My Prescriptions
+			</h2>
 			{prescriptions.length === 0 ? (
 				<p>No prescriptions found.</p>
 			) : (
-				<>
-					<Button onClick={generateSummary} style={{ marginBottom: '20px' }}>
-						Generate Summary
-					</Button>
-					{summary && (
-						<Alert
-							message="Prescription Summary"
-							description={summary}
-							type="info"
-							showIcon
-							style={{ marginBottom: '20px' }}
+				<ul style={{ listStyleType: "none", padding: 0 }}>
+					{prescriptions.map((prescription, index) => (
+						<PrescriptionItem
+							key={index}
+							prescription={prescription}
+							fdaData={fdaData}
 						/>
-					)}
-					<ul style={{ listStyleType: "none", padding: 0 }}>
-						{prescriptions.map((prescription, index) => (
-							<li key={index} style={{
-								marginBottom: "20px",
-								borderBottom: "1px solid #eee",
-								paddingBottom: "10px",
-								cursor: "pointer",
-							}}>
-								<Link
-									href={`/prescription/${prescription.prescriptionID}`}
-									passHref
-								>
-									<div style={{ cursor: "pointer" }}>
-										<p>
-											<strong>Drug Name:</strong>{" "}
-											{prescription.drugName}
-										</p>
-										<p>
-											<strong>Drug Class:</strong>{" "}
-											{prescription.drugClass}
-										</p>
-										<p>
-											<strong>Dose:</strong> {prescription.dose}{" "}
-											{prescription.doseUnit}
-										</p>
-										<p>
-											<strong>Frequency:</strong>{" "}
-											{prescription.frequency}
-										</p>
-										<p>
-											<strong>Duration:</strong>{" "}
-											{prescription.duration}
-										</p>
-									</div>
-								</Link>
-								<Collapse>
-									<Panel header="FDA Information" key="1">
-										{fdaData[prescription.prescriptionID] ? (
-											Object.entries(fdaData[prescription.prescriptionID]).map(([key, value]) => (
-												<p key={key}><strong>{key.replace(/_/g, ' ')}:</strong> {value}</p>
-											))
-										) : (
-											<p>FDA data not available</p>
-										)}
-									</Panel>
-								</Collapse>
-							</li>
-						))}
-					</ul>
-				</>
+					))}
+				</ul>
 			)}
 		</div>
 	);

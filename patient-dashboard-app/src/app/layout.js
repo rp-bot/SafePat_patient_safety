@@ -8,6 +8,7 @@ import {
 import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/app/components/Navbar";
+import Head from "next/head";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -29,6 +30,9 @@ export default function RootLayout({ children }) {
 	return (
 		<ClerkProvider>
 			<html lang="en">
+				<Head>
+					<link rel="icon" href="/favicon.ico" />
+				</Head>
 				<body>
 					<Navbar />
 

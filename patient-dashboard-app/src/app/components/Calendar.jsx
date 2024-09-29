@@ -4,28 +4,41 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { supabase } from "@/utils/supabase/supabaseClient";
 import { message, notification } from "antd";
+import { useUser } from "@clerk/clerk-react";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 
-const Calendar = () => {
+const Calendar = ({ prescriptionID }) => {
 	const [events, setEvents] = useState([]);
 	const [patientID, setPatientID] = useState(null);
+	const { user } = useUser();
+
+	useEffect(() => {
+		// Request notification permission
+		if (Notification.permission !== "granted") {
+			Notification.requestPermission().then((permission) => {
+				if (permission !== "granted") {
+					message.error("Notification permission denied");
+				}
+			});
+		}
+	}, []);
 
 	useEffect(() => {
 		const fetchPatientID = async () => {
 			try {
+				if (!user) throw new Error("User not authenticated");
+
 				const { data: patientData, error: patientError } =
 					await supabase
 						.from("Patient")
 						.select("patientID")
-						.limit(1)
+						.eq("clerk_username", user.username)
 						.single();
 
 				if (patientError) throw patientError;
 
 				if (patientData) {
-					console.log("Patient data:", patientData);
 					setPatientID(patientData.patientID);
-				} else {
-					console.log("No patient data found");
 				}
 			} catch (error) {
 				console.error("Error fetching patient data:", error.message);
@@ -33,37 +46,33 @@ const Calendar = () => {
 			}
 		};
 
-		fetchPatientID();
-	}, []);
+		if (!prescriptionID) {
+			fetchPatientID();
+		}
+	}, [prescriptionID, user]);
 
 	useEffect(() => {
 		const fetchPrescriptionData = async () => {
-			if (!patientID) {
-				console.log("No patientID available");
-				return;
-			}
-
 			try {
-				console.log(
-					"Fetching prescription data for patientID:",
-					patientID
-				);
+				let data, error;
 
-				const { data, error } = await supabase
-					.from("Prescription")
-					.select("*")
-					.eq("patientID", patientID);
+				if (prescriptionID) {
+					({ data, error } = await supabase
+						.from("Prescription")
+						.select("*")
+						.eq("prescriptionID", prescriptionID));
+				} else if (patientID) {
+					({ data, error } = await supabase
+						.from("Prescription")
+						.select("*")
+						.eq("patientID", patientID));
+				}
 
 				if (error) throw error;
 
-				console.log("Prescription data:", data);
-
 				if (data && data.length > 0) {
 					const newEvents = data.flatMap(generateEvents);
-					console.log("Generated events:", newEvents);
 					setEvents(newEvents);
-				} else {
-					console.log("No prescription data found");
 				}
 			} catch (error) {
 				console.error(
@@ -74,11 +83,32 @@ const Calendar = () => {
 			}
 		};
 
-		fetchPrescriptionData();
-	}, [patientID]);
+		if (prescriptionID || patientID) {
+			fetchPrescriptionData();
+		}
+	}, [prescriptionID, patientID]);
+
+	const logPrescription = async (prescriptionID, isCompleted) => {
+		const logDate = new Date().toISOString().split('T')[0];
+		const logTime = new Date().toTimeString().split(' ')[0];
+
+		const { error } = await supabase
+			.from("PrescriptionLog")
+			.insert([{ prescriptionID, logDate, logTime, isCompleted }]);
+
+		if (error) {
+			console.error("Error logging prescription:", error.message);
+			message.error("Failed to log prescription");
+		}
+	};
+
+	const handleNotificationAction = (prescriptionID, isCompleted, event) => {
+		logPrescription(prescriptionID, isCompleted);
+		setEvents((prevEvents) => prevEvents.filter((e) => e !== event));
+		notification.close(prescriptionID); // Close the notification
+	};
 
 	const generateEvents = (prescription) => {
-		console.log("Generating events for prescription:", prescription);
 		const { drugName, startDate, duration, frequency, dose, doseUnit } =
 			prescription;
 		const newEvents = [];
@@ -108,49 +138,70 @@ const Calendar = () => {
 					start: eventDate,
 					end: new Date(eventDate.getTime() + 30 * 60000),
 					allDay: false,
+					prescriptionID: prescription.prescriptionID,
 				};
 
 				newEvents.push(event);
 
 				// Add notification for this event
-				setTimeout(() => {
-					notification.info({
-						message: `Medication Reminder`,
-						description: `Time to take ${drugName} ${dose} ${doseUnit}`,
-						duration: 0,
-					});
-				}, eventDate.getTime() - new Date().getTime());
+				const notificationTime =
+					eventDate.getTime() - new Date().getTime();
+				console.log(
+					`Notification for ${drugName} scheduled in ${notificationTime} ms`
+				);
+				if (notificationTime > 0) {
+					setTimeout(() => {
+						console.log(`Triggering notification for ${drugName}`);
+						notification.open({
+							key: prescription.prescriptionID, // Unique key for the notification
+							message: `Medication Reminder`,
+							description: (
+								<div>
+									<p>
+										Time to take {drugName} {dose}{" "}
+										{doseUnit}
+									</p>
+									<div>
+										<button
+											onClick={() =>
+												handleNotificationAction(
+													prescription.prescriptionID,
+													true,
+													event
+												)
+											}
+											className="m-2 bg-green-500 text-white p-2 rounded-md"
+										>
+											<CheckCircleOutlined /> Taken
+										</button>
+										<button
+											onClick={() =>
+												handleNotificationAction(
+													prescription.prescriptionID,
+													false,
+													event
+												)
+											}
+											className="m-2 bg-red-500 text-white p-2 rounded-md"
+										>
+											<CloseCircleOutlined /> Missed
+										</button>
+									</div>
+								</div>
+							),
+							duration: 0, // Prevent auto-close
+							closeIcon: null, // Remove the close button
+						});
+					}, notificationTime);
+				}
 			}
 		}
 
-		// Add a test event that will trigger a notification in the next minute
-		const testEventDate = new Date();
-		testEventDate.setMinutes(testEventDate.getMinutes() + 1);
-
-		const testEvent = {
-			title: `Test Event`,
-			start: testEventDate,
-			end: new Date(testEventDate.getTime() + 30 * 60000),
-			allDay: false,
-		};
-
-		newEvents.push(testEvent);
-
-		// Add notification for the test event
-		setTimeout(() => {
-			notification.info({
-				message: `Test Notification`,
-				description: `This is a test notification.`,
-				duration: 0,
-			});
-		}, testEventDate.getTime() - new Date().getTime());
-
-		console.log("Generated events for this prescription:", newEvents);
 		return newEvents;
 	};
 
 	return (
-		<div style={{ height: "500px" }}>
+		<div className="h-[500px] overflow-y-auto">
 			<FullCalendar
 				plugins={[dayGridPlugin, timeGridPlugin]}
 				initialView="timeGridWeek"

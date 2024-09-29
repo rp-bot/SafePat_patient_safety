@@ -11,12 +11,15 @@ import PopulatePrescriptions from "./components/PopulatePrescriptions";
 import Calendar from "./components/Calendar";
 export default function page() {
 	return (
-		<div className="mx-48 my-20 ">
-			<SignedIn>
+		<div className="m-4 ">
+			<SignedIn >
 				{/* <div className="flex flex-row justify-center items-center"></div> */}
 				<CheckPatientData />
+				<div className="grid grid-cols-[.3fr_.7fr]">
 				<PopulatePrescriptions />
 				<Calendar />
+				</div>
+				
 			</SignedIn>
 		</div>
 	);
