@@ -1,133 +1,202 @@
-import React, { useEffect, useState } from 'react';
-import { Form, Input, DatePicker, Button, message } from 'antd';
-import { supabase } from '@/utils/supabase/supabaseClient'; // Adjust the import path as needed
-import { useUser } from '@clerk/nextjs'; // Import the useUser hook from Clerk
+import React, { useState } from "react";
+import { Form, Input, DatePicker, Button, message } from "antd";
+import { supabase } from "@/utils/supabase/supabaseClient"; // Adjust the import path as needed
+import { useUser } from "@clerk/nextjs"; // Import the useUser hook from Clerk
 
-function UpdatePatientMR() {
-  const [form] = Form.useForm();
-  const { user } = useUser();
-  const [patientID, setPatientID] = useState(null);
+function UpdatePatientMR({ patientID }) {
+	const [form] = Form.useForm();
+	const { user } = useUser();
 
-  useEffect(() => {
-    const fetchPatientID = async () => {
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('Patient')
-            .select('patientID')
-            .eq('username', user.username)
-            .single();
+	const handleSubmit = async (values, tableName) => {
+		if (!patientID) {
+			message.error("Patient ID not found. Please try again later.");
+			return;
+		}
 
-          if (error) throw error;
+		try {
+			const { error } = await supabase
+				.from(tableName)
+				.insert({ ...values, patientID });
 
-          if (data) {
-            setPatientID(data.patientID);
-          } else {
-            message.error('Patient not found');
-          }
-        } catch (error) {
-          console.error('Error fetching patient ID:', error);
-          message.error('Failed to fetch patient information');
-        }
-      }
-    };
+			if (error) throw error;
 
-    fetchPatientID();
-  }, [user]);
+			message.success(`Patient ${tableName} updated successfully!`);
+			form.resetFields();
+		} catch (error) {
+			console.error(`Error updating patient ${tableName}:`, error);
+			message.error(
+				`Failed to update patient ${tableName}. Please try again.`
+			);
+		}
+	};
 
-  const handleSubmit = async (values) => {
-    if (!patientID) {
-      message.error('Patient ID not found. Please try again later.');
-      return;
-    }
+	return (
+		<>
+			<div className=" grid grid-cols-2 justify-start gap-4 items-start">
+				<Form
+					form={form}
+					onFinish={(values) =>
+						handleSubmit(values.medicalHistory, "MedicalHistory")
+					}
+					layout="vertical"
+					className="max-w-md my-8 p-6 mx-4 bg-white rounded-lg shadow-md"
+				>
+					<div className="section medical-history">
+						<h2 className="text-2xl font-bold">Medical History</h2>
+						<Form.Item
+							name={["medicalHistory", "condition"]}
+							label="Condition"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item
+							name={["medicalHistory", "diagnosisDate"]}
+							label="Diagnosis Date"
+							rules={[{ required: true }]}
+						>
+							<DatePicker />
+						</Form.Item>
+						<Form.Item
+							name={["medicalHistory", "treatmentID"]}
+							label="Treatment ID"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item>
+							<Button type="primary" htmlType="submit">
+								Save Medical History
+							</Button>
+						</Form.Item>
+					</div>
+				</Form>
 
-    try {
-      // Insert data into MedicalHistory table
-      const { error: medicalHistoryError } = await supabase
-        .from('MedicalHistory')
-        .insert({ ...values.medicalHistory, patientID });
+				<Form
+					form={form}
+					onFinish={(values) =>
+						handleSubmit(
+							values.pastHospitalization,
+							"PastHospitalization"
+						)
+					}
+					layout="vertical"
+					className="max-w-md my-8 p-6 mx-4 bg-white rounded-lg shadow-md"
+				>
+					<div className="section past-hospitalization">
+						<h2 className="text-2xl font-bold">
+							Past Hospitalization
+						</h2>
+						<Form.Item
+							name={["pastHospitalization", "hospital"]}
+							label="Hospital"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item
+							name={[
+								"pastHospitalization",
+								"hospitalizationDate",
+							]}
+							label="Hospitalization Date"
+							rules={[{ required: true }]}
+						>
+							<DatePicker />
+						</Form.Item>
+						<Form.Item>
+							<Button type="primary" htmlType="submit">
+								Save Past Hospitalization
+							</Button>
+						</Form.Item>
+					</div>
+				</Form>
 
-      if (medicalHistoryError) throw medicalHistoryError;
+				<Form
+					form={form}
+					onFinish={(values) =>
+						handleSubmit(values.pastSurgery, "PastSurgery")
+					}
+					layout="vertical"
+					className="max-w-md my-8 p-6 mx-4 bg-white rounded-lg shadow-md"
+				>
+					<div className="section past-surgery">
+						<h2 className="text-2xl font-bold">Past Surgery</h2>
+						<Form.Item
+							name={["pastSurgery", "surgeryID"]}
+							label="Surgery ID"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item
+							name={["pastSurgery", "surgeryDate"]}
+							label="Surgery Date"
+							rules={[{ required: true }]}
+						>
+							<DatePicker />
+						</Form.Item>
+						<Form.Item
+							name={["pastSurgery", "institution"]}
+							label="Institution"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item>
+							<Button type="primary" htmlType="submit">
+								Save Past Surgery
+							</Button>
+						</Form.Item>
+					</div>
+				</Form>
 
-      // Insert data into PastHospitalization table
-      const { error: pastHospitalizationError } = await supabase
-        .from('PastHospitalization')
-        .insert({ ...values.pastHospitalization, patientID });
-
-      if (pastHospitalizationError) throw pastHospitalizationError;
-
-      // Insert data into PastSurgery table
-      const { error: pastSurgeryError } = await supabase
-        .from('PastSurgery')
-        .insert({ ...values.pastSurgery, patientID });
-
-      if (pastSurgeryError) throw pastSurgeryError;
-
-      // Insert data into PatientImmunizations table
-      const { error: patientImmunizationsError } = await supabase
-        .from('PatientImmunizations')
-        .insert({ ...values.patientImmunizations, patientID });
-
-      if (patientImmunizationsError) throw patientImmunizationsError;
-
-      message.success('Patient medical record updated successfully!');
-      form.resetFields();
-    } catch (error) {
-      console.error('Error updating patient medical record:', error);
-      message.error('Failed to update patient medical record. Please try again.');
-    }
-  };
-
-  return (
-    <Form form={form} onFinish={handleSubmit} layout="vertical">
-      <h2>Medical History</h2>
-      <Form.Item name={['medicalHistory', 'condition']} label="Condition" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name={['medicalHistory', 'diagnosisDate']} label="Diagnosis Date" rules={[{ required: true }]}>
-        <DatePicker />
-      </Form.Item>
-      <Form.Item name={['medicalHistory', 'treatmentID']} label="Treatment ID" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-
-      <h2>Past Hospitalization</h2>
-      <Form.Item name={['pastHospitalization', 'hospital']} label="Hospital" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name={['pastHospitalization', 'hospitalizationDate']} label="Hospitalization Date" rules={[{ required: true }]}>
-        <DatePicker />
-      </Form.Item>
-
-      <h2>Past Surgery</h2>
-      <Form.Item name={['pastSurgery', 'surgeryID']} label="Surgery ID" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name={['pastSurgery', 'surgeryDate']} label="Surgery Date" rules={[{ required: true }]}>
-        <DatePicker />
-      </Form.Item>
-      <Form.Item name={['pastSurgery', 'institution']} label="Institution" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-
-      <h2>Patient Immunizations</h2>
-      <Form.Item name={['patientImmunizations', 'surgeryID']} label="Surgery ID" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-      <Form.Item name={['patientImmunizations', 'surgeryDate']} label="Surgery Date" rules={[{ required: true }]}>
-        <DatePicker />
-      </Form.Item>
-      <Form.Item name={['patientImmunizations', 'institution']} label="Institution" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
-
-      <Form.Item>
-        <Button type="primary" htmlType="submit">
-          Save Patient Medical Record
-        </Button>
-      </Form.Item>
-    </Form>
-  );
+				<Form
+					form={form}
+					onFinish={(values) =>
+						handleSubmit(
+							values.patientImmunizations,
+							"PatientImmunizations"
+						)
+					}
+					layout="vertical"
+					className="max-w-md my-8 p-6 mx-4 bg-white rounded-lg shadow-md"
+				>
+					<div className="section patient-immunizations">
+						<h2 className="text-2xl font-bold">
+							Patient Immunizations
+						</h2>
+						<Form.Item
+							name={["patientImmunizations", "surgeryID"]}
+							label="Surgery ID"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item
+							name={["patientImmunizations", "surgeryDate"]}
+							label="Surgery Date"
+							rules={[{ required: true }]}
+						>
+							<DatePicker />
+						</Form.Item>
+						<Form.Item
+							name={["patientImmunizations", "institution"]}
+							label="Institution"
+							rules={[{ required: true }]}
+						>
+							<Input />
+						</Form.Item>
+						<Form.Item>
+							<Button type="primary" htmlType="submit">
+								Save Patient Immunizations
+							</Button>
+						</Form.Item>
+					</div>
+				</Form>
+			</div>
+		</>
+	);
 }
 
 export default UpdatePatientMR;

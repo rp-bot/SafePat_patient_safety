@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/utils/supabase/supabaseClient";
 import { AddPrescription } from "@/app/components/patientHandling/AddPrescription";
+import UpdatePatientMR from "@/app/components/patientHandling/UpdatePatientMR";
 
 export default function PatientDetails() {
 	const [patient, setPatient] = useState(null);
@@ -35,13 +36,11 @@ export default function PatientDetails() {
 	if (!patient) return <div>Patient not found</div>;
 
 	return (
-		<div className="p-4">
-			<h1 className="text-2xl font-bold mb-4">Patient Details</h1>
-			<div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-				<p>patiendID: {patientID}</p>
-				<p>
-					<strong>Name:</strong> {patient.firstName}{" "}
-					{patient.lastName}
+		<div className="p-4 bg-zinc-100">
+			<div className="p-10 mx-auto bg-white rounded-lg shadow-md">
+				{/* <p>patiendID: {patientID}</p> */}
+				<p className="text-xl font-bold">
+					{patient.firstName} {patient.lastName}
 				</p>
 				<p>
 					<strong>Date of Birth:</strong> {patient.dob}
@@ -51,7 +50,10 @@ export default function PatientDetails() {
 				</p>
 				{/* Add more patient details as needed */}
 			</div>
-			<AddPrescription patientID={patientID} />
+			<div className="flex flex-row justify-between gap-4 w-full">
+				<AddPrescription patientID={patientID} />
+				<UpdatePatientMR patientID={patientID} />
+			</div>
 		</div>
 	);
 }

@@ -107,43 +107,42 @@ export const AddPrescription = ({ patientID }) => {
 	};
 
 	return (
-		<div className="max-w-md mt-8 p-6 bg-white rounded-lg shadow-md">
-			<Title level={2} className="text-center mb-6">
+		<div className="max-w-md mt-8 p-6 bg-white rounded-lg shadow-md flex flex-col items-center justify-start">
+			<h1 className="text-center mb-6 font-bold text-2xl">
 				Add New Prescription
-			</Title>
+			</h1>
 			<Form form={form} onFinish={onFinish} layout="vertical">
-				{/* <Form.Item label="Patient">
-					<Input
-						value={`${patientName} (ID: ${patientID})`}
-						disabled
-					/>
-				</Form.Item>
-				<Form.Item label="Doctor">
-					<Input value={doctorName} disabled />
-				</Form.Item> */}
 				<Form.Item
-					name="drugName"
-					label="Drug Name"
-					rules={[
-						{
-							required: true,
-							message: "Please input the drug name!",
-						},
-					]}
+					label="Drug Details"
+					required
+					style={{ marginBottom: 8 }} // Adjust vertical distance
 				>
-					<Input />
-				</Form.Item>
-				<Form.Item
-					name="drugClass"
-					label="Drug Class"
-					rules={[
-						{
-							required: true,
-							message: "Please input the drug class!",
-						},
-					]}
-				>
-					<Input />
+					<Input.Group compact>
+						<Form.Item
+							name="drugName"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please input the drug name!",
+								},
+							]}
+						>
+							<Input placeholder="Drug Name" className="w-1/2" />
+						</Form.Item>
+						<Form.Item
+							name="drugClass"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please input the drug class!",
+								},
+							]}
+						>
+							<Input placeholder="Drug Class" className="w-1/2" />
+						</Form.Item>
+					</Input.Group>
 				</Form.Item>
 				<Form.Item
 					name="startDate"
@@ -154,58 +153,86 @@ export const AddPrescription = ({ patientID }) => {
 							message: "Please select the start date!",
 						},
 					]}
+					style={{ marginBottom: 8 }} // Adjust vertical distance
 				>
 					<DatePicker className="w-full" />
 				</Form.Item>
 				<Form.Item
-					name="duration"
-					label="Duration"
-					rules={[
-						{
-							required: true,
-							message: "Please input the duration!",
-						},
-					]}
+					label="Duration and Frequency"
+					required
+					style={{ marginBottom: 8 }} // Adjust vertical distance
 				>
-					<Input />
+					<Input.Group compact>
+						<Form.Item
+							name="duration"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please input the duration!",
+								},
+							]}
+						>
+							<InputNumber
+								placeholder="Duration"
+								className="w-1/2"
+							/>
+						</Form.Item>
+						<Form.Item
+							name="frequency"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please input the frequency!",
+								},
+							]}
+						>
+							<InputNumber
+								placeholder="Frequency"
+								className="w-1/2"
+							/>
+						</Form.Item>
+					</Input.Group>
 				</Form.Item>
 				<Form.Item
-					name="frequency"
-					label="Frequency"
-					rules={[
-						{
-							required: true,
-							message: "Please input the frequency!",
-						},
-					]}
-				>
-					<Input />
-				</Form.Item>
-				<Form.Item
-					name="doseUnit"
-					label="Dose Unit"
-					rules={[
-						{
-							required: true,
-							message: "Please select the dose unit!",
-						},
-					]}
-				>
-					<Select>
-						<Option value="mg">mg</Option>
-						<Option value="mcg">mcg</Option>
-					</Select>
-				</Form.Item>
-				<Form.Item
-					name="dose"
 					label="Dose"
-					rules={[
-						{ required: true, message: "Please input the dose!" },
-					]}
+					required
+					style={{ marginBottom: 8 }} // Adjust vertical distance
 				>
-					<InputNumber className="w-full" />
+					<Input.Group compact>
+						<Form.Item
+							name="dose"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please input the dose!",
+								},
+							]}
+						>
+							<InputNumber className="w-2/3" />
+						</Form.Item>
+						<Form.Item
+							name="doseUnit"
+							noStyle
+							rules={[
+								{
+									required: true,
+									message: "Please select the dose unit!",
+								},
+							]}
+						>
+							<Select className="w-1/3">
+								<Option value="mg">mg</Option>
+								<Option value="mcg">mcg</Option>
+							</Select>
+						</Form.Item>
+					</Input.Group>
 				</Form.Item>
-				<Form.Item>
+				<Form.Item style={{ marginTop: 8, marginBottom: 0 }}>
+					{" "}
+					{/* Adjust vertical distance */}
 					<Button type="primary" htmlType="submit" className="w-full">
 						Add Prescription
 					</Button>
